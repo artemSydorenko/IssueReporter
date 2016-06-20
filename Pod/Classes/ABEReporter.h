@@ -8,6 +8,8 @@
 
 @import UIKit;
 
+@class ABEReporterViewController;
+
 @protocol ABEReporterInformationDelegate <NSObject>
 
 /**
@@ -60,6 +62,11 @@
  *  The object to ask for extra information when the user shakes the device, see the comment in the protocol above to see what is already sent
  */
 @property (nonatomic) id <ABEReporterInformationDelegate> delegate;
+
+/**
+ *  If it is on screen, this will contain the reporterViewController
+ */
+@property (nullable, nonatomic, weak) ABEReporterViewController *reporterViewController;
 
 /**
  *  Returns the extra key value pair to append to the issues that are sent to Github to aid in debugging

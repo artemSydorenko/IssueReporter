@@ -16,7 +16,55 @@
 #import "UIImage+ABEAutoRotation.h"
 #import "NSURL+ABERandomImageURL.h"
 
+#import "ABEReporter.h"
+
+#import "ABEReporterViewController.h"
+
+@import Photos;
+
 static double const kABECompressionRatio = 0.5;
+
+static id _observer = nil;
+
+__attribute__((constructor)) static void ABERegisterScreenshotNotifier(void) {
+    @autoreleasepool {
+        NSOperationQueue *mainQueue = [NSOperationQueue mainQueue];
+
+        _observer = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationUserDidTakeScreenshotNotification object:nil queue:mainQueue usingBlock:^(NSNotification *note) {
+            UIAlertController *(^constructAlertController)() = ^UIAlertController *() {
+                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Error" message:@"We need access to your photos." preferredStyle:UIAlertControllerStyleAlert];
+
+                [alertController addAction:[UIAlertAction actionWithTitle:@"Go to Settings" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                    [[UIApplication sharedApplication] openURL:url];
+                }]];
+
+                [alertController addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+
+                return alertController;
+            };
+
+            [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+                switch (status) {
+                    case PHAuthorizationStatusAuthorized:
+                        [[ABEReporter reporter] showReporterView];
+                        break;
+
+                    case PHAuthorizationStatusRestricted:
+                    case PHAuthorizationStatusDenied:
+                        [[ABEReporter reporter].reporterViewController presentViewController:constructAlertController() animated:YES completion:nil];
+                        break;
+                }
+            }];
+        }];
+    }
+}
+
+__attribute__((deconstructor)) static void ABEDeregisterScreenshotNotifier(void) {
+    @autoreleasepool {
+        [[NSNotificationCenter defaultCenter] removeObserver:_observer];
+    }
+}
 
 @interface ABEIssueManager ()
 @property (nonatomic, weak) UIViewController *viewController;
